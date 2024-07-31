@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão SAM Balanças</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: rgb(101, 0, 0);
+            color: white;
+            padding: 15px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            border-radius: 0 15px 15px 0;
+            z-index: 1000;
+        }
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 10px;
+            text-decoration: none;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease-in-out;
+        }
+        .sidebar a:hover {
+            background-color: #8B0000;
+        }
+        .content {
+            margin-left: 270px;
+            padding: 20px;
+            width: calc(100% - 270px);
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: cover;
+        }
+        .section {
+            display: none;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+        }
+        .section.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            color: black;
+        }
+        .form-group input[type="file"] {
+            padding: 0;
+        }
+        .form-group select {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            color: black;
+        }
+        .form-group button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+        .client-list, .service-list, .partner-list {
+            margin-top: 20px;
+        }
+        .client-item, .service-item, .partner-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: black;
+        }
+        .client-item button, .service-item button, .partner-item button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #dc3545;
+            color: white;
+            cursor: pointer;
+        }
+        .client-item button:hover, .service-item button:hover, .partner-item button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 onclick="showSection('inicio')">Menu</h2>
+        <a href="#servicos" onclick="showSection('servicos')">Serviços</a>
+        <a href="#parceiros" onclick="showSection('parceiros')">Parceiros</a>
+        <a href="#clientes" onclick="showSection('clientes')">Clientes</a>
+    </div>
+    <div class="content" id="content">
+        <div class="section active" id="inicio">
+            <!-- Página inicial, sem conteúdo específico -->
+        </div>
+        <div class="section" id="servicos">
+            <h2>Gerenciar Serviços</h2>
+            <div class="form-group actions">
+                <button type="button" onclick="showServiceForm()">Cadastrar Serviço</button>
+                <button type="button" onclick="listServices()">Consultar Serviços</button>
+            </div>
+            <div id="serviceForm" style="display:none;">
+                <h3>Inserir/Editar Serviço</h3>
+                <input type="hidden" id="servicoId">
+                <div class="form-group">
+                    <label for="servicoTitulo">Título</label>
+                    <input type="text" id="servicoTitulo" name="servicoTitulo">
+                </div>
+                <div class="form-group">
+                    <label for="servicoDescricao">Descrição</label>
+                    <textarea id="servicoDescricao" name="servicoDescricao"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="servicoImagem">Imagem do Serviço (Tamanho recomendado: 800x600)</label>
+                    <input type="file" id="servicoImagem" name="servicoImagem">
+                </div>
+                <div class="form-group">
+                    <label for="servicoStatus">Status</label>
+                    <select id="servicoStatus" name="servicoStatus">
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="button" onclick="saveServico()">Salvar Serviço</button>
+                </div>
+            </div>
+            <div id="serviceList" class="service-list" style="display:none;"></div>
+        </div>
+
+        <div class="section" id="parceiros">
+            <h2>Gerenciar Parceiros</h2>
+            <div class="form-group actions">
+                <button type="button" onclick="showPartnerForm()">Cadastrar Parceiro</button>
+                <button type="button" onclick="listPartners()">Consultar Parceiros</button>
+            </div>
+            <div id="partnerForm" style="display:none;">
+                <h3>Inserir/Editar Parceiro</h3>
+                <input type="hidden" id="parceiroId">
+                <div class="form-group">
+                    <label for="parceiroNome">Nome</label>
+                    <input type="text" id="parceiroNome" name="parceiroNome">
+                </div>
+                <div class="form-group">
+                    <label for="parceiroLogo">Logo do Parceiro (Tamanho recomendado: 400x400)</label>
+                    <input type="file" id="parceiroLogo" name="parceiroLogo">
+                </div>
+                <div class="form-group">
+                    <button type="button" onclick="saveParceiro()">Salvar Parceiro</button>
+                </div>
+            </div>
+            <div id="partnerList" class="partner-list" style="display:none;"></div>
+        </div>
+
+        <div class="section" id="clientes">
+            <h2>Gerenciar Clientes</h2>
+            <div class="form-group actions">
+                <button type="button" onclick="showClientForm()">Cadastrar Cliente</button>
+                <button type="button" onclick="listClientes()">Consultar Clientes</button>
+            </div>
+            <div id="clientForm" style="display:none;">
+                <input type="hidden" id="clienteId">
+                <div class="form-group">
+                    <label for="clienteCodigo">Código</label>
+                    <input type="text" id="clienteCodigo" name="clienteCodigo">
+                </div>
+                <div class="form-group">
+                    <label for="clienteNome">Nome</label>
+                    <input type="text" id="clienteNome" name="clienteNome">
+                </div>
+                <div class="form-group">
+                    <label for="clienteTelefone">Telefone</label>
+                    <input type="text" id="clienteTelefone" name="clienteTelefone">
+                </div>
+                <div class="form-group">
+                    <label for="clienteEndereco">Endereço</label>
+                    <input type="text" id="clienteEndereco" name="clienteEndereco">
+                </div>
+                <div class="form-group">
+                    <label for="clienteEmail">E-mail</label>
+                    <input type="email" id="clienteEmail" name="clienteEmail">
+                </div>
+                <div class="form-group">
+                    <label for="clienteCPF">C.P.F</label>
+                    <input type="text" id="clienteCPF" name="clienteCPF" onblur="validateCPF(this)">
+                </div>
+                <div class="form-group">
+                    <button type="button" onclick="saveCliente()">Salvar Cliente</button>
+                </div>
+            </div>
+            <div id="clientList" class="client-list" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+
+            if (sectionId === 'inicio') {
+                document.getElementById('content').style.background = "none";
+            } else {
+                document.getElementById('content').style.background = "white";
+            }
+        }
+
+        function showServiceForm() {
+            document.getElementById('serviceForm').style.display = 'block';
+            document.getElementById('serviceList').style.display = 'none';
+        }
+
+        function listServices() {
+            document.getElementById('serviceForm').style.display = 'none';
+            document.getElementById('serviceList').style.display = 'block';
+
+            const services = [
+                { id: '001', titulo: 'Serviço A', descricao: 'Descrição A', status: 'ativo' },
+                { id: '002', titulo: 'Serviço B', descricao: 'Descrição B', status: 'inativo' },
+            ];
+
+            const serviceList = document.getElementById('serviceList');
+            serviceList.innerHTML = '';
+            services.forEach(service => {
+                const serviceItem = document.createElement('div');
+                serviceItem.className = 'service-item';
+                serviceItem.innerHTML = `
+                    <span>${service.titulo} (${service.id})</span>
+                    <div>
+                        <button onclick="editService('${service.id}')">Editar</button>
+                        <button onclick="deleteService('${service.id}')">Excluir</button>
+                    </div>
+                `;
+                serviceList.appendChild(serviceItem);
+            });
+        }
+
+        function editService(id) {
+            const services = [
+                { id: '001', titulo: 'Serviço A', descricao: 'Descrição A', status: 'ativo' },
+                { id: '002', titulo: 'Serviço B', descricao: 'Descrição B', status: 'inativo' },
+            ];
+
+            const service = services.find(service => service.id === id);
+
+            if (service) {
+                document.getElementById('servicoId').value = service.id;
+                document.getElementById('servicoTitulo').value = service.titulo;
+                document.getElementById('servicoDescricao').value = service.descricao;
+                document.getElementById('servicoStatus').value = service.status;
+
+                showServiceForm();
+            }
+        }
+
+        function saveServico() {
+            const id = document.getElementById('servicoId').value;
+            const titulo = document.getElementById('servicoTitulo').value;
+            const descricao = document.getElementById('servicoDescricao').value;
+            const status = document.getElementById('servicoStatus').value;
+
+            alert('Serviço salvo com sucesso!');
+            listServices();
+        }
+
+        function deleteService(id) {
+            if (confirm(`Deseja realmente excluir o serviço com ID ${id}?`)) {
+                alert(`Serviço ${id} excluído com sucesso!`);
+                listServices();
+            }
+        }
+
+        function showPartnerForm() {
+            document.getElementById('partnerForm').style.display = 'block';
+            document.getElementById('partnerList').style.display = 'none';
+        }
+
+        function listPartners() {
+            document.getElementById('partnerForm').style.display = 'none';
+            document.getElementById('partnerList').style.display = 'block';
+
+            const partners = [
+                { id: '001', nome: 'Parceiro A' },
+                { id: '002', nome: 'Parceiro B' },
+            ];
+
+            const partnerList = document.getElementById('partnerList');
+            partnerList.innerHTML = '';
+            partners.forEach(partner => {
+                const partnerItem = document.createElement('div');
+                partnerItem.className = 'partner-item';
+                partnerItem.innerHTML = `
+                    <span>${partner.nome} (${partner.id})</span>
+                    <div>
+                        <button onclick="editPartner('${partner.id}')">Editar</button>
+                        <button onclick="deletePartner('${partner.id}')">Excluir</button>
+                    </div>
+                `;
+                partnerList.appendChild(partnerItem);
+            });
+        }
+
+        function editPartner(id) {
+            const partners = [
+                { id: '001', nome: 'Parceiro A' },
+                { id: '002', nome: 'Parceiro B' },
+            ];
+
+            const partner = partners.find(partner => partner.id === id);
+
+            if (partner) {
+                document.getElementById('parceiroId').value = partner.id;
+                document.getElementById('parceiroNome').value = partner.nome;
+
+                showPartnerForm();
+            }
+        }
+
+        function saveParceiro() {
+            const id = document.getElementById('parceiroId').value;
+            const nome = document.getElementById('parceiroNome').value;
+
+            alert('Parceiro salvo com sucesso!');
+            listPartners();
+        }
+
+        function deletePartner(id) {
+            if (confirm(`Deseja realmente excluir o parceiro com ID ${id}?`)) {
+                alert(`Parceiro ${id} excluído com sucesso!`);
+                listPartners();
+            }
+        }
+
+        function showClientForm() {
+            document.getElementById('clientForm').style.display = 'block';
+            document.getElementById('clientList').style.display = 'none';
+        }
+
+        function listClientes() {
+            document.getElementById('clientForm').style.display = 'none';
+            document.getElementById('clientList').style.display = 'block';
+
+            const clientes = [
+                { id: '001', codigo: '001', nome: 'Cliente A', telefone: '123456789', endereco: 'Rua A', email: 'clientea@example.com', cpf: '11111111111' },
+                { id: '002', codigo: '002', nome: 'Cliente B', telefone: '987654321', endereco: 'Rua B', email: 'clienteb@example.com', cpf: '22222222222' },
+            ];
+
+            const clientList = document.getElementById('clientList');
+            clientList.innerHTML = '';
+            clientes.forEach(cliente => {
+                const clientItem = document.createElement('div');
+                clientItem.className = 'client-item';
+                clientItem.innerHTML = `
+                    <span>${cliente.nome} (${cliente.codigo})</span>
+                    <div>
+                        <button onclick="editCliente('${cliente.id}')">Editar</button>
+                        <button onclick="deleteCliente('${cliente.id}')">Excluir</button>
+                    </div>
+                `;
+                clientList.appendChild(clientItem);
+            });
+        }
+
+        function editCliente(id) {
+            const clientes = [
+                { id: '001', codigo: '001', nome: 'Cliente A', telefone: '123456789', endereco: 'Rua A', email: 'clientea@example.com', cpf: '11111111111' },
+                { id: '002', codigo: '002', nome: 'Cliente B', telefone: '987654321', endereco: 'Rua B', email: 'clienteb@example.com', cpf: '22222222222' },
+            ];
+
+            const cliente = clientes.find(cliente => cliente.id === id);
+
+            if (cliente) {
+                document.getElementById('clienteId').value = cliente.id;
+                document.getElementById('clienteCodigo').value = cliente.codigo;
+                document.getElementById('clienteNome').value = cliente.nome;
+                document.getElementById('clienteTelefone').value = cliente.telefone;
+                document.getElementById('clienteEndereco').value = cliente.endereco;
+                document.getElementById('clienteEmail').value = cliente.email;
+                document.getElementById('clienteCPF').value = cliente.cpf;
+
+                showClientForm();
+            }
+        }
+
+        function saveCliente() {
+            const id = document.getElementById('clienteId').value;
+            const codigo = document.getElementById('clienteCodigo').value;
+            const nome = document.getElementById('clienteNome').value;
+            const telefone = document.getElementById('clienteTelefone').value;
+            const endereco = document.getElementById('clienteEndereco').value;
+            const email = document.getElementById('clienteEmail').value;
+            const cpf = document.getElementById('clienteCPF').value;
+
+            alert('Cliente salvo com sucesso!');
+            listClientes();
+        }
+
+        function deleteCliente(id) {
+            if (confirm(`Deseja realmente excluir o cliente com ID ${id}?`)) {
+                alert(`Cliente ${id} excluído com sucesso!`);
+                listClientes();
+            }
+        }
+
+        function validateCPF(input) {
+            const cpf = input.value.replace(/\D/g, '');
+            if (cpf.length !== 11 || !/^\d{11}$/.test(cpf)) {
+                alert('CPF inválido!');
+                input.focus();
+                return false;
+            }
+            // Validação de CPF pode ser adicionada aqui
+            return true;
+        }
+    </script>
+</body>
+</html>
